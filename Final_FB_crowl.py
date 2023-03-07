@@ -22,8 +22,6 @@ from selenium import webdriver
 Comment_List= []
 comment= []
 options = Options()
-op= webdriver.ChromeOptions()
-op.add_argument('headless')
 
 #爬蟲---------------------------------
 
@@ -49,6 +47,7 @@ def scrape(driver, account, password, keyword):
     except:
         print("already login")
 
+    print("留言採集中......")
 
     '''
     # 抓取"相關留言"物件，並點選
@@ -79,7 +78,7 @@ def scrape(driver, account, password, keyword):
         article_num= 0
 
         for i in range(0,len(new_comment)):
-            if "日" in new_comment[i].text:
+            if " " in new_comment[i].text:
                 article_num= i
                 break
         Web= new_comment[article_num]
@@ -105,7 +104,8 @@ def scrape(driver, account, password, keyword):
                 flag= 0
                 #print("yes")
         start= len(more)-1
-        #more.clear'''
+        #more.clear
+    '''
     #抓取相關留言
     flag= 0
     back_ptr= 0
@@ -144,11 +144,18 @@ def scrape(driver, account, password, keyword):
     WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR,"div.x1y1aw1k.xn6708d > div")))
     comment_div= Web.find_elements(By.CSS_SELECTOR,"div.x1y1aw1k.xn6708d > div")
 
+    print("相關留言:",len(comment_div),"筆\n")
+
+    print("垃圾、標記式留言過濾中......\n")
     for i in range(0,len(comment_div)):
-        comment.append(comment_div[i].text)
+        try:
+            comment_div[i].find_element(By.CSS_SELECTOR,"a")
+        except:
+            comment.append(comment_div[i].text)
+    
+
     #過濾標記式留言
     '''
-    print(len(comment_div))
     for i in range(0,len(comment_div)):
         try:
             comment_div[i].find_element(By.CSS_SELECTOR,"a")
@@ -157,15 +164,16 @@ def scrape(driver, account, password, keyword):
                 comment.append(comment_div[i].text)
     '''
 
-    #print(len(comment))
+    print("有效樣本留言:",len(comment),"筆\n")
+    print("塞選關鍵字及排除非法輸入......\n")
     for i in range(0,len(comment)):
-        if comment[i]!= "作者"and operator.not_("留言……" in comment[i]) and operator.not_("回覆" in comment[i] and "......" in comment[i]) and operator.not_("\n" in comment[i]) and operator.not_("顯示更多" in comment[i]):
+        if comment[i]!= "作者"and operator.not_("留言……" in comment[i]) and operator.not_("回覆" in comment[i] and "......" in comment[i]) and operator.not_("\n" in comment[i]) and operator.not_("顯示更多" in comment[i]) and operator.not_("頭號粉絲" in comment[i]):
             for k in range(0,len(Keyword)):
                 if Keyword[k] in comment[i]:
                     Comment_List.append(comment[i])
                     #print(comment[i])
                     break
-
+    print("完成!!!")                
 #  貼入目標網站
 def data_login(driver):
 
@@ -222,9 +230,9 @@ def data_write(alt,driver):
     js = 'arguments[0].removeAttribute("readonly");'
     try:
         WebDriverWait(driver,20,0.5).until(EC.presence_of_element_located((By.ID,"inputTitle")))
-        limit= 10
+        limit= 20
         title_string= ""
-        if len(Comment_List) < 10:
+        if len(Comment_List) < 20:
             limit= len(Comment_List)
 
         title= driver.find_element(By.ID,"inputTitle")
