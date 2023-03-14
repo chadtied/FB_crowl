@@ -373,12 +373,6 @@ if __name__ == '__main__':
 
 
 
-#--------------------------------
-'''
-email= "chadchadlun@yahoo.com.tw"
-password= "sheep7111034607"
-url= "https://www.facebook.com/welikea/posts/pfbid02iKj183PJn6tK2beh7XaByijsVMtPapPp7GgPgxLGCyxfdjzi8ncQH8dRtTbq6Y8ml"
-'''
 
 
 
