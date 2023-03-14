@@ -5,7 +5,7 @@ import tkinter
 import random
 import operator
 import time
-import os
+import keyboard
 from selenium.webdriver.common.keys import Keys
 import tkinter as tk
 from tkinter.constants import CENTER
@@ -16,6 +16,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from pynput.keyboard import Controller
 from selenium import webdriver
+import openpyxl
+import pyautogui
 
 
 #初始變數建立--------------------------
@@ -29,6 +31,8 @@ prefs= {
         }
 }
 options.add_experimental_option('prefs',prefs)
+workbook= openpyxl.Workbook()
+workpage= workbook.create_sheet("List1",0)
 
 #爬蟲---------------------------------
 
@@ -52,7 +56,7 @@ def scrape(driver, account, password, keyword):
         Login= driver.find_element(By.ID,"loginbutton")
         driver.execute_script("arguments[0].click();", Login)
     except:
-        print("already login")
+        print("FB already login")
 
     print("留言採集中......")
 
@@ -79,15 +83,17 @@ def scrape(driver, account, password, keyword):
     '''
 
     #抓取第一則貼文
-    time.sleep(3)
+    #time.sleep(3)
     try:
-        ActionChains(driver).move_by_offset(600,500).click().perform()
+        #ActionChains(driver).move_by_offset(600,500).click().perform()
         WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.CLASS_NAME,"x78zum5.x1n2onr6.xh8yej3")))
-        new_comment= driver.find_elements(By.CLASS_NAME,"x78zum5.x1n2onr6.xh8yej3")
         article_num= 0
         pretend= 1
+        count= 10000
 
         while True:
+            count-= 1
+            new_comment= driver.find_elements(By.CLASS_NAME,"x78zum5.x1n2onr6.xh8yej3")
             for i in range(0,len(new_comment)):
                 if "留言" in new_comment[i].text:
                     article_num= i
@@ -95,12 +101,15 @@ def scrape(driver, account, password, keyword):
                     break
             if pretend== 0:
                 break
+            elif count< 0:
+                print("can't not get data, maybe wrong type!")
+                break
         
         Web= new_comment[article_num]
     except:
         print("first object catch fail")
 
-    print(new_comment[article_num].text)
+   #print(new_comment[article_num].text)
 
 
     #展開留言內容
@@ -182,28 +191,46 @@ def scrape(driver, account, password, keyword):
     '''
 
     print("有效樣本留言:",len(comment),"筆\n")
-    print("塞選關鍵字及排除非法輸入......\n")
+    print("篩選關鍵字及排除非法輸入......\n")
+
+    xlsx_row= 1
+    xlsx_col= 1
     for i in range(0,len(comment)):
-        if comment[i]!= "作者"and operator.not_("留言……" in comment[i]) and operator.not_("回覆" in comment[i] and "......" in comment[i]) and operator.not_("\n" in comment[i]) and operator.not_("顯示更多" in comment[i]) and operator.not_("頭號粉絲" in comment[i]):
+        if comment[i]!= "作者"and operator.not_("留言……" in comment[i]) and operator.not_("回覆" in comment[i] and "......" in comment[i]) and operator.not_("顯示更多" in comment[i]) and operator.not_("頭號粉絲" in comment[i]):
+            if "\n" in comment[i]:
+                tmp_comment= comment[i].split('\n')
+                sum_comment= ''
+                for ptr in range(0,len(tmp_comment)):
+                    sum_comment+= tmp_comment[ptr]
+                    sum_comment+= ','
+                comment[i]= sum_comment
+
             for k in range(0,len(Keyword)):
                 if Keyword[k] in comment[i]:
                     Comment_List.append(comment[i])
+                    workpage.cell(xlsx_row,xlsx_col).value= comment[i]
+                    xlsx_row+= 1
+                    if xlsx_row> 15:
+                        xlsx_col+= 1
+                        xlsx_row= 1
+                    
                     #print(comment[i])
                     break
+    print("獲取目標留言:",len(Comment_List),"筆\n")
     print("完成!!!")                
 #  貼入目標網站
-def data_login(driver):
+def data_login(driver, web_account, web_password):
 
     try:
-        WebDriverWait(driver,60,0.5).until(EC.presence_of_element_located((By.ID,"inputUsername")))
+        WebDriverWait(driver,180,1).until(EC.presence_of_element_located((By.ID,"inputUsername")))
         account= driver.find_element(By.ID,"inputUsername")
         password= driver.find_element(By.ID,"inputPassword")
         button= driver.find_element(By.ID,"signinSubmit")
 
-        while driver.find_element(By.ID,"inputUsername").get_attribute("value")!= "cam0034":
-            account.send_keys("cam0034")
-        while driver.find_element(By.ID,"inputPassword").get_attribute("value")!= "&k6rmcm9":
-            password.send_keys("&k6rmcm9")
+        while driver.find_element(By.ID,"inputUsername").get_attribute("value")!= web_account:
+            account.send_keys(web_account)
+        while driver.find_element(By.ID,"inputPassword").get_attribute("value")!= web_password:
+            password.send_keys(web_password)
 
         driver.execute_script("arguments[0].click();",button)
     except:
@@ -246,19 +273,21 @@ def data_scan(alt,driver):
 def data_write(alt,driver):
     js = 'arguments[0].removeAttribute("readonly");'
     try:
-        WebDriverWait(driver,20,0.5).until(EC.presence_of_element_located((By.ID,"inputTitle")))
-        limit= 20
-        title_string= ""
-        if len(Comment_List) < 20:
-            limit= len(Comment_List)
+        WebDriverWait(driver,120,2).until(EC.presence_of_element_located((By.ID,"inputTitle")))
 
+        title_string= ""
+
+        if len(Comment_List)== 0:
+            return False
+        
+        content= driver.find_element(By.ID,"inputContent")
         title= driver.find_element(By.ID,"inputTitle")
 
-        for i in range(0,limit):
-            num= random.randint(0,len(Comment_List)-1)
-            title_string+= Comment_List[num]
-            title_string+= " "
-            Comment_List.pop(num)
+        num= random.randint(0,len(Comment_List)-1)
+        content.send_keys(Comment_List[num])
+        title_string+= Comment_List[num]
+        title_string+= " "
+        Comment_List.pop(num)
         
         driver.execute_script("arguments[0].value = '"+ title_string+ "';", title)
 
@@ -266,9 +295,15 @@ def data_write(alt,driver):
         driver.execute_script("arguments[0].value = '"+ alt.link+ "';", link)
 
         select_att= Select(driver.find_element(By.ID,"attribute"))
-        select_att.select_by_value(alt.select_att)
+        try:
+            select_att.select_by_value(alt.select_att)
+        except:
+            print("no input")
         select_vic= Select(driver.find_element(By.ID,"viceattribute"))
-        select_vic.select_by_value(alt.select_vic)
+        try:
+            select_vic.select_by_value(alt.select_vic)
+        except:
+            print("no input")
 
         #driver.execute_script("arguments[0].value = '你猜一下';", search_button)
         #js = 'arguments[0].removeAttribute("readonly");'
@@ -277,14 +312,17 @@ def data_write(alt,driver):
         driver.execute_script("arguments[0].value = '"+ alt.media_date+ "';", media_date)
 
         china_media= Select(driver.find_element(By.ID,"found_type"))
-        china_media.select_by_value(alt.china_media)
+        try:
+            china_media.select_by_value(alt.china_media)
+        except:
+            print("no input")
 
         media_name= driver.find_element(By.ID,"found_group")
         driver.execute_script("arguments[0].value = '"+ alt.media_name+ "';", media_name)
         media_account= driver.find_element(By.ID,"found_account")
         driver.execute_script("arguments[0].value = '"+ alt.media_account+ "';", media_account)
     except:
-        print("data_write error")
+        print("data_write error 電腦速度不足!!")
 
 
     source_date= driver.find_element(By.ID, "source_date")
@@ -292,7 +330,10 @@ def data_write(alt,driver):
     driver.execute_script("arguments[0].value = '"+ alt.source_date+ "';", source_date)
 
     source_media= Select(driver.find_element(By.ID,"source_type"))
-    source_media.select_by_value(alt.source_media)
+    try:
+        source_media.select_by_value(alt.source_media)
+    except:
+        print("no input")
 
     source_name= driver.find_element(By.ID,"source_group")
     driver.execute_script("arguments[0].value = '"+ alt.source_name+ "';", source_name)
@@ -303,9 +344,21 @@ def data_write(alt,driver):
 
 
     company_main= Select(driver.find_element(By.ID,"firstgovernment"))
-    company_main.select_by_value(alt.company_main)
+    try:
+        company_main.select_by_value(alt.company_main)
+    except:
+        print("no input")
     company_vice= Select(driver.find_element(By.ID,"secondgovernment"))
-    company_vice.select_by_value(alt.company_vice)
+    try:
+        company_vice.select_by_value(alt.company_vice)
+    except:
+        print("no input")
+    
+
+    complete= driver.find_element(By.CSS_SELECTOR, "#fmForm > button")
+    driver.execute_script("arguments[0].click();", complete)
+
+    return True
 
 
 #介面---------------------------------
@@ -316,38 +369,52 @@ class Window(object):
 
         self.root = tk.Tk()
         self.root.title("爬蟲")
-        self.root.geometry('450x500')
+        self.root.geometry('500x550')
         # Entry
         self.input_account = tk.Entry(self.root, width=40, font=('Courier',9))
         self.input_password = tk.Entry(self.root, width=40, font=('Courier',9))
         self.input_url = tk.Entry(self.root, width=40, font=('Courier',9))
         self.input_keyword = tk.Entry(self.root, width=40, font=('Courier',9))
+        self.input_word = tk.Entry(self.root, width=40,  font=('Courier',9))
+        self.input_web_account = tk.Entry(self.root,  width= 40, font=('Courier',9))
+        self.input_web_password = tk.Entry(self.root, width= 40, font=('Courier',9))
         # Label
-        self.label_account = tk.Label(self.root, text="帳號: ", font=('Courier',9))
-        self.label_password = tk.Label(self.root, text="密碼: ", font=('Courier',9))  
+        self.label_account = tk.Label(self.root, text="FB帳號: ", font=('Courier',9))
+        self.label_password = tk.Label(self.root, text="FB密碼: ", font=('Courier',9))
         self.label_url = tk.Label(self.root, text="請輸入網址: ", font=('Courier',9))    
-        self.label_keyword = tk.Label(self.root, text="請輸入關鍵字: ", font=('Courier',9))  
+        self.label_keyword = tk.Label(self.root, text="請輸入關鍵字: ", font=('Courier',9))
+        self.label_web_account = tk.Label(self.root, text="目標網站帳號: ", font=('Courier',9))
+        self.label_web_password = tk.Label(self.root, text="目標網站密碼: ", font=('Courier',9))
+        self.label_word = tk.Label(self.root, text= "手動新增留言",  font=('Courier',9))
         # Button
         self.start_botton = tk.Button(text = "開始",  command=self.start_event, width=30)
         self.clear_botton = tk.Button(text = "清除",  command=self.clear_event, width=30)
         self.scan_botton = tk.Button(text = "掃描",  command=self.scan_event, width=30)
-        self.return_botton = tk.Button(text = "重新",  command=self.return_event, width=30)
+        self.return_botton = tk.Button(text = "送出",  command=self.return_event, width=30)
+        self.plus_button= tk.Button(text = "新增",  command=self.plus_event, width=30)
     def gui_arrange(self):
         # Entry
         self.input_account.place(x=110, y=110, height=25)
         self.input_password.place(x=110, y=140, height=25)
         self.input_url.place(x=110, y=170, height=25)  
-        self.input_keyword.place(x=110, y=200, height=25)
+        self.input_web_account.place(x=110, y=200, height=25)
+        self.input_web_password.place(x=110, y=230, height=25)
+        self.input_keyword.place(x=110, y=260, height=25)
+        self.input_word.place(x=110, y=290, height=25)
         # Label
-        self.label_account.place(x=60, y=110)
-        self.label_password.place(x=60, y=140)
+        self.label_account.place(x=30, y=110)
+        self.label_password.place(x=30, y=140)
         self.label_url.place(x=25, y= 170) 
-        self.label_keyword.place(x=15, y= 200)
+        self.label_web_account.place(x=15, y=200)
+        self.label_web_password.place(x=15, y=230)
+        self.label_keyword.place(x=15, y= 260)
+        self.label_word.place(x=15,y=290)
         # Botton
-        self.start_botton.place(x=170, y=250, height=30,  width = 150)
-        self.clear_botton.place(x=170, y=290, height=30,  width = 150)
-        self.scan_botton.place(x=170, y=330, height=30,  width = 150)
-        self.return_botton.place(x=170, y=370, height=30,  width = 150)
+        self.start_botton.place(x=140, y=350, height=40,  width = 220)
+        self.clear_botton.place(x=140, y=400, height=30,  width = 220)
+        self.scan_botton.place(x=5, y=350, height=40,  width = 120)
+        self.return_botton.place(x=140, y=440, height=30,  width = 220)
+        self.plus_button.place(x=375, y=350, height=40,  width = 120)
         # Web Element
         self.driver=  uc.Chrome(use_subprocess= True, chrome_options= options)
 
@@ -366,36 +433,66 @@ class Window(object):
         self.company_main= '請選擇'
         self.company_vice= '無'
 
+    def clear_event(self):
+        self.input_url.delete(0, 'end')
+        self.input_keyword.delete(0, 'end')
+        self.input_account.delete(0, 'end')
+        self.input_password.delete(0, 'end')
+        self.input_web_account.delete(0, 'end')
+        self.input_web_password.delete(0, 'end')
+        self.input_word.delete(0, 'end')
 
     def start_event(self):
         url = self.input_url.get()
         keyword = self.input_keyword.get()
         account = self.input_account.get()
         password = self.input_password.get()
+        web_account= self.input_web_account.get()
+        web_password= self.input_web_password.get()
+
+        self.clear_event()
+        Comment_List.clear()
+        comment.clear()
+        print("清除暫存留言")
 
         self.driver.get(url)
         scrape(self.driver, account, password, keyword)
-        time.sleep(5)
+        try:
+            workbook.save("./new.xlsx")
+        except:
+            print("檔案可能開啟，造成錯誤")
 
-        '''self.driver.get("https://btsp.servehttp.com/users/signin")
         time.sleep(5)
-        data_login(self.driver)
-        data_write(self,self.driver)'''
+        self.driver.get("https://btsp.servehttp.com/users/signin")
+        data_login(self.driver, web_account, web_password)
+        #data_write(self,self.driver)
         # 接口
 
-    def clear_event(self):
-        self.driver.close()
-        self.input_url.delete(0, 'end')
-        self.input_keyword.delete(0, 'end')
-        self.input_account.delete(0, 'end')
-        self.input_password.delete(0, 'end')
+
+    def plus_event(self):
+        Word= self.input_word.get()
+        tmp_Word= Word.split(' ')
+        self.input_word.delete(0, 'end')
+        for i in range(0, len(tmp_Word)):
+            if tmp_Word[i]!= '':
+                Comment_List.append(tmp_Word[i])
+                print("成功新增 ->",tmp_Word[i],"<-")
 
     def scan_event(self):
         data_scan(self,self.driver)
 
     def return_event(self):
-        self.driver.get("https://btsp.servehttp.com/report/report")
-        data_write(self,self.driver)
+        while data_write(self,self.driver):
+            try:
+                WebDriverWait(self.driver,180,1).until(EC.presence_of_element_located((By.CLASS_NAME,"dt-center")))
+                print("傳送完成!!")
+            except:
+
+
+                print("傳送失敗!!")
+
+            self.driver.get("https://btsp.servehttp.com/report/report")
+        print("全部傳送完畢!")
 
 def main():
     window = Window()
@@ -408,11 +505,7 @@ if __name__ == '__main__':
 
 
 #--------------------------------
-'''
-email= "chadchadlun@yahoo.com.tw"
-password= "sheep7111034607"
-url= "https://www.facebook.com/welikea/posts/pfbid02iKj183PJn6tK2beh7XaByijsVMtPapPp7GgPgxLGCyxfdjzi8ncQH8dRtTbq6Y8ml"
-'''
+
 
 
 
