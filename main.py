@@ -46,18 +46,19 @@ def scrape(driver, account, password, keyword, scr_count):
 
     #登入介面
     try:
-        WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.ID,"email")))
+        WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.ID,"login_form")))
 
-        while driver.find_element(By.ID,"email").get_attribute("value")!= account:
-            Email= driver.find_element(By.ID,"email")
+        while driver.find_element(By.CSS_SELECTOR,"#login_form > div.x9f619.x1n2onr6.x1ja2u2z.x2lah0s.x13a6bvl.x6s0dn4.xozqiw3.x1q0g3np.x1pi30zi.x1swvt13.xexx8yu.xcud41i.x139jcc6.x4cne27.xifccgj.x1s85apg.x3holdf > div:nth-child(1) > label > input").get_attribute("value")!= account:
+            Email= driver.find_element(By.CSS_SELECTOR,"#login_form > div.x9f619.x1n2onr6.x1ja2u2z.x2lah0s.x13a6bvl.x6s0dn4.xozqiw3.x1q0g3np.x1pi30zi.x1swvt13.xexx8yu.xcud41i.x139jcc6.x4cne27.xifccgj.x1s85apg.x3holdf > div:nth-child(1) > label > input")
             Email.send_keys(account)
-        while driver.find_element(By.ID,"pass").get_attribute("value")!= password:
-            Password= driver.find_element(By.ID,"pass")
+        while driver.find_element(By.CSS_SELECTOR,"#login_form > div.x9f619.x1n2onr6.x1ja2u2z.x2lah0s.x13a6bvl.x6s0dn4.xozqiw3.x1q0g3np.x1pi30zi.x1swvt13.xexx8yu.xcud41i.x139jcc6.x4cne27.xifccgj.x1s85apg.x3holdf > div:nth-child(2) > label > input").get_attribute("value")!= password:
+            Password= driver.find_element(By.CSS_SELECTOR,"#login_form > div.x9f619.x1n2onr6.x1ja2u2z.x2lah0s.x13a6bvl.x6s0dn4.xozqiw3.x1q0g3np.x1pi30zi.x1swvt13.xexx8yu.xcud41i.x139jcc6.x4cne27.xifccgj.x1s85apg.x3holdf > div:nth-child(2) > label > input")
             Password.send_keys(password)
 
         time.sleep(2)
-        Login= driver.find_element(By.ID,"loginbutton")
+        Login= driver.find_element(By.CSS_SELECTOR,"#login_form > div.x9f619.x1n2onr6.x1ja2u2z.x2lah0s.x13a6bvl.x6s0dn4.xozqiw3.x1q0g3np.x1pi30zi.x1swvt13.xexx8yu.xcud41i.x139jcc6.x4cne27.xifccgj.x1s85apg.x3holdf > div:nth-child(3) > div > div")
         driver.execute_script("arguments[0].click();", Login)
+        time.sleep(5)
     except:
         print("FB already login")
 
@@ -192,10 +193,10 @@ def scrape(driver, account, password, keyword, scr_count):
 
     print("顯示篇幅長留言隱藏部分......\n")
     comment_more= Web.find_elements(By.CSS_SELECTOR,"div.x1i10hfl.xjbqb8w.x6umtig")
+   
     for content in comment_more:
         if content.text== "查看更多":
             driver.execute_script("arguments[0].click();",content)
-
     
     #抓取留言內容
     WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR,"div.x1y1aw1k.xn6708d > div")))
@@ -203,19 +204,21 @@ def scrape(driver, account, password, keyword, scr_count):
 
     print("垃圾、標記式留言過濾中......\n")
 
+    #print(len(comment_set))
     for i in range(0,len(comment_set)):
+
         comment_id= comment_set[i].find_elements(By.CSS_SELECTOR, 'span')
         tmp_list= []
         for a in comment_id:
             if a.text!= '':
                 tmp_list.append(a.text)
-        fb_comment= tmp_list[-1]
-        fb_id= tmp_list[-2]
-
-        if fb_id!= fb_comment and len(fb_comment)>= 15 and operator.not_("顯示更多" in fb_comment or "http" in fb_comment):
-            comment.append(fb_id+ '@'+ fb_comment)
-            #print(comment[-1])
-    
+        if len(tmp_list)> 0:
+            fb_comment= tmp_list[-1]
+            fb_id= tmp_list[-2]
+            if fb_id!= fb_comment and len(fb_comment)>= 15 and operator.not_("顯示更多" in fb_comment or "http" in fb_comment):
+                comment.append(fb_id+ '@'+ fb_comment)
+                #print(comment[-1])
+        
     #過濾標記式留言
     '''
     for i in range(0,len(comment_div)):
