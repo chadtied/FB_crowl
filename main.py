@@ -1,4 +1,3 @@
-#import undetected_chromedriver as uc
 from seleniumbase import Driver
 #from lib2to3.pgen2 import driver
 from selenium.webdriver.common.by import By
@@ -148,10 +147,10 @@ def scrape(driver, account, password, keyword, scr_count):
                 break
         
         time.sleep(2)
-        all_comment= Web.find_element(By.XPATH,"/html/body/div[1]/div/div[1]/div/div[3]/div/div/div/div[2]/div/div/div[1]/div[1]/div/div/div/div/div/div/div[1]/div/div[3]")
+        all_comment= Web.find_element(By.XPATH,"/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[2]/div/div/div[1]/div[1]/div/div/div/div/div/div/div[1]/div/div[3]")
         driver.execute_script("arguments[0].click();",all_comment)
     except:
-        print("轉換失敗!可能為該文章未有所有留言此選項")
+        print("轉換失敗!!!可能為該文章未有所有留言此選項")
    
     #抓取相關留言
     flag= 0
@@ -437,7 +436,7 @@ class Window(object):
         self.return_botton.place(x=140, y=510, height=30,  width = 220)
         self.plus_button.place(x=375, y=420, height=40,  width = 120)
         # Web Element
-        #self.driver=  uc.Chrome(use_subprocess= True, chrome_options= options)
+        #self.driver=  uc.Chrome()
         self.driver=  Driver(uc= True, incognito= False)
         self.scan_record= 0
         self.web_account= ''
