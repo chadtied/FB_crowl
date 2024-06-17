@@ -147,17 +147,18 @@ def scrape(driver, account, password, keyword, scr_count):
                 break
         
         time.sleep(2)
+        WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.XPATH,"/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[2]/div/div/div[1]/div[1]/div/div/div/div/div/div/div[1]/div/div[3]")))
         all_comment= Web.find_element(By.XPATH,"/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[2]/div/div/div[1]/div[1]/div/div/div/div/div/div/div[1]/div/div[3]")
         driver.execute_script("arguments[0].click();",all_comment)
     except:
         print("轉換失敗!!!可能為該文章未有所有留言此選項")
    
-    #抓取相關留言
+    #抓取所有留言
+    '''
     flag= 0
     back_ptr= 0
     step= 0
     time.sleep(5)
-
     WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.CLASS_NAME,"x1i10hfl.xjbqb8w")))
     try:
         while flag!= 1:
@@ -187,7 +188,25 @@ def scrape(driver, account, password, keyword, scr_count):
         print("your computer is too low")
 
         #more.clear
-    
+    '''
+    #將網頁脫到最底部
+    # 将页面滚动到底部
+    try:
+        last_height = driver.execute_script("return document.body.scrollHeight")
+        while True:
+            # 向下滚动至页面底部
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            
+            # 等待页面加载
+            time.sleep(2.5)
+            
+            # 计算新的滚动高度并与上次的滚动高度进行比较
+            new_height = driver.execute_script("return document.body.scrollHeight")
+            if new_height == last_height:   break
+            last_height = new_height
+    except: print("頁面滾動失敗")
+
+
     #展開較長留言隱藏部分
 
     print("顯示篇幅長留言隱藏部分......\n")
