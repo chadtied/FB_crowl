@@ -32,7 +32,7 @@ workpage= workbook.create_sheet("List1",0)
 #爬蟲---------------------------------
 
 
-def scrape(driver, account, password, keyword, scr_count):
+def scrape(driver, account, password, keyword, scr_count, seconds):
 
     Keyword= keyword.split(' ')
     if(len(Keyword)> 2):
@@ -146,7 +146,7 @@ def scrape(driver, account, password, keyword, scr_count):
                 driver.execute_script("arguments[0].click();",key)
                 break
         
-        time.sleep(2)
+        time.sleep(seconds)
         WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.XPATH,"/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[2]/div/div/div[1]/div[1]/div/div/div/div/div/div/div[1]/div/div[3]")))
         all_comment= Web.find_element(By.XPATH,"/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[2]/div/div/div[1]/div[1]/div/div/div/div/div/div/div[1]/div/div[3]")
         driver.execute_script("arguments[0].click();",all_comment)
@@ -190,6 +190,7 @@ def scrape(driver, account, password, keyword, scr_count):
         #more.clear
     '''
     #將網頁脫到最底部
+
     # 将页面滚动到底部
     try:
         last_height = driver.execute_script("return document.body.scrollHeight")
@@ -198,7 +199,7 @@ def scrape(driver, account, password, keyword, scr_count):
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             
             # 等待页面加载
-            time.sleep(4)
+            time.sleep(seconds)
             
             # 计算新的滚动高度并与上次的滚动高度进行比较
             new_height = driver.execute_script("return document.body.scrollHeight")
@@ -412,6 +413,7 @@ class Window(object):
         self.input_word = tk.Entry(self.root, width=40,  font=('Courier',9))
         self.input_web_account = tk.Entry(self.root,  width= 40, font=('Courier',9))
         self.input_web_password = tk.Entry(self.root, width= 40, font=('Courier',9))
+        self.entry_wait_sec = tk.Entry(self.root, width= 5, font=('Courier',9))
         #self.test= tk.Text(self.root, width= 60, font=('Courier',9))
         # Label
         self.label_account = tk.Label(self.root, text="FB帳號: ", font=('Courier',9))
@@ -421,6 +423,7 @@ class Window(object):
         self.label_web_account = tk.Label(self.root, text="目標網站帳號: ", font=('Courier',9))
         self.label_web_password = tk.Label(self.root, text="目標網站密碼: ", font=('Courier',9))
         self.label_word = tk.Label(self.root, text= "手動新增留言: ",  font=('Courier',9))
+        self.wait_sec = tk.Label(self.root, text= "延遲秒數: ",  font=('Courier',9))
         # Button
         self.start_botton = tk.Button(text = "開始",  command=self.start_event, width=30)
         self.clear_botton = tk.Button(text = "清除",  command=self.clear_event, width=30)
@@ -439,6 +442,7 @@ class Window(object):
         self.input_url2.place(x=110, y=320, height=25)
         self.input_url3.place(x=110, y=350, height=25)
         self.input_url4.place(x=110, y=380, height=25)
+        self.entry_wait_sec.place(x=400, y=560, height= 20)
         #self.test.place(x=110, y= 290, height= 40)
         # Label
         self.label_account.place(x=30, y=110)
@@ -448,6 +452,7 @@ class Window(object):
         self.label_keyword.place(x=15, y= 230)
         self.label_url.place(x=25, y= 290) 
         self.label_word.place(x=15,y=260)
+        self.wait_sec.place(x=330, y=560)
         # Botton
         self.start_botton.place(x=140, y=420, height=40,  width = 220)
         self.clear_botton.place(x=140, y=470, height=30,  width = 220)
@@ -490,6 +495,8 @@ class Window(object):
         password = self.input_password.get()
         self.web_account= self.input_web_account.get()
         self.web_password= self.input_web_password.get()
+        self.seconds= 3
+        if self.entry_wait_sec.get()!= '':  self.seconds= int(self.entry_wait_sec.get())
 
         self.scan_record= 0
         Comment_List.clear()
@@ -500,7 +507,7 @@ class Window(object):
             if len(url[i])> 0:
                 try:
                     self.driver.get(url[i])
-                    scrape(self.driver, account, password, keyword, i)
+                    scrape(self.driver, account, password, keyword, i, self.seconds)
                     comment.clear()
                 except:
                     print("錯誤，可能為網址錯誤或網頁加載問題")
