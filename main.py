@@ -198,7 +198,7 @@ def scrape(driver, account, password, keyword, scr_count):
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             
             # 等待页面加载
-            time.sleep(2.5)
+            time.sleep(4)
             
             # 计算新的滚动高度并与上次的滚动高度进行比较
             new_height = driver.execute_script("return document.body.scrollHeight")
