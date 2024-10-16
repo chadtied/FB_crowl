@@ -31,8 +31,28 @@ workpage= workbook.create_sheet("List1",0)
 
 #爬蟲---------------------------------
 
+# 定義滾動函數
+def scroll_to_bottom(driver):
+    last_height = driver.execute_script("return document.body.scrollHeight")
 
-def scrape(driver, account, password, keyword, scr_count, seconds):
+    while True:
+        # 滾動到頁面的底部
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+        # 等待頁面加載
+        time.sleep(2)
+
+        # 計算新的頁面高度
+        new_height = driver.execute_script("return document.body.scrollHeight")
+
+        # 如果頁面高度沒有變化，說明已經加載到最底部
+        if new_height == last_height:
+            break
+        last_height = new_height
+
+
+
+def scrape(driver, account, password, keyword, scr_count):
 
     Keyword= keyword.split(' ')
     if(len(Keyword)> 2):
@@ -64,33 +84,6 @@ def scrape(driver, account, password, keyword, scr_count, seconds):
     print("留言採集中......")
 
     try:
-        '''
-        # 抓取"相關留言"物件，並點選
-        ActionChains(driver).move_by_offset(600,500).click().perform()
-        WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR,"div.x1jx94hy.x12nagc")))
-        form= driver.find_elements(By.CSS_SELECTOR,"div.x1jx94hy.x12nagc")
-
-        span= form[-1].find_elements(By.CSS_SELECTOR,"span.x193iq5w")
-        #form_click= driver.find_element(By.CSS_SELECTOR,".x78zum5> span")
-        driver.execute_script("arguments[0].click();", span[0])
-
-
-        #點選"所有留言"
-        WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR,"div.xb57i2i.x1q594ok.x5lxg6s.x6ikm8r.x1ja2u2z > div")))
-        List= driver.find_elements(By.CSS_SELECTOR,"div.xb57i2i.x1q594ok.x5lxg6s.x6ikm8r.x1ja2u2z > div")
-        for i in range(0,len(List)):
-            if "留言" in List[i].text:
-                find_all= List[i].find_elements(By.CSS_SELECTOR,"span")
-        
-        time.sleep(3)
-        driver.execute_script("arguments[0].click();",find_all[-1])
-        time.sleep(8)
-        '''
-    
-
-        #抓取第一則貼文
-        #time.sleep(3)
-        #ActionChains(driver).move_by_offset(600,500).click().perform()
         WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.CLASS_NAME,"x78zum5.x1n2onr6.xh8yej3")))
         article_num= 0
         pretend= 1
@@ -115,24 +108,6 @@ def scrape(driver, account, password, keyword, scr_count, seconds):
         print("first object catch fail")
 
     #print(new_comment[article_num].text)
-    '''WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR,"div.x1jx94hy.x12nagc")))
-    form= Web.find_elements(By.CSS_SELECTOR,"div.x1jx94hy.x12nagc")
-
-    span= form[-1].find_elements(By.CSS_SELECTOR,"span.x193iq5w")
-    #form_click= driver.find_element(By.CSS_SELECTOR,".x78zum5> span")
-    driver.execute_script("arguments[0].click();", span[0])
-
-
-    #點選"所有留言"
-    WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR,"div.xb57i2i.x1q594ok.x5lxg6s.x6ikm8r.x1ja2u2z > div")))
-    List= driver.find_elements(By.CSS_SELECTOR,"div.xb57i2i.x1q594ok.x5lxg6s.x6ikm8r.x1ja2u2z > div")
-    for i in range(0,len(List)):
-        if "留言" in List[i].text:
-            find_all= List[i].find_elements(By.CSS_SELECTOR,"span")
-        
-    time.sleep(3)
-    driver.execute_script("arguments[0].click();",find_all[-1])'''
-    
 
     #展開最相關->所有留言
 
@@ -146,68 +121,18 @@ def scrape(driver, account, password, keyword, scr_count, seconds):
                 driver.execute_script("arguments[0].click();",key)
                 break
         
-        time.sleep(seconds)
-        WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.XPATH,"/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[2]/div/div/div[1]/div[1]/div/div/div/div/div/div/div[1]/div/div[3]")))
+        time.sleep(2)
         all_comment= Web.find_element(By.XPATH,"/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[2]/div/div/div[1]/div[1]/div/div/div/div/div/div/div[1]/div/div[3]")
         driver.execute_script("arguments[0].click();",all_comment)
     except:
         print("轉換失敗!!!可能為該文章未有所有留言此選項")
-   
-    #抓取所有留言
-    '''
-    flag= 0
-    back_ptr= 0
-    step= 0
+    
+    # 執行滾動
+    scroll_to_bottom(driver)
     time.sleep(5)
-    WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.CLASS_NAME,"x1i10hfl.xjbqb8w")))
-    try:
-        while flag!= 1:
-            flag= 1
-            step= 0
-            
-            more= Web.find_elements(By.CLASS_NAME,"x1i10hfl.xjbqb8w.xjqpnuy.xa49m3k")
-            #print(len(more))
-            back_ptr= len(more)-1
-            while back_ptr>= 0:
-                if step> 10:
-                    break
-                try:
-                    #print(more[back_ptr].text)
-                    if "檢視另" in more[back_ptr].text or "顯示更多" in more[back_ptr].text or "查看更多" in more[back_ptr].text:
-                        driver.execute_script("arguments[0].click();",more[back_ptr])
-                        flag= 0
-                        #print(more[back_ptr].text)
-                        break
-                    back_ptr-= 1
-                    step+= 1
-                except:
-                    #print("wrong message")
-                    flag= 0
-                    break
-    except:
-        print("your computer is too low")
 
         #more.clear
-    '''
-    #將網頁脫到最底部
-
-    # 将页面滚动到底部
-    try:
-        last_height = driver.execute_script("return document.body.scrollHeight")
-        while True:
-            # 向下滚动至页面底部
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            
-            # 等待页面加载
-            time.sleep(seconds)
-            
-            # 计算新的滚动高度并与上次的滚动高度进行比较
-            new_height = driver.execute_script("return document.body.scrollHeight")
-            if new_height == last_height:   break
-            last_height = new_height
-    except: print("頁面滾動失敗")
-
-
+    
     #展開較長留言隱藏部分
 
     print("顯示篇幅長留言隱藏部分......\n")
@@ -231,6 +156,8 @@ def scrape(driver, account, password, keyword, scr_count, seconds):
         for a in comment_id:
             if a.text!= '':
                 tmp_list.append(a.text)
+                print(a.text)
+
         if len(tmp_list)> 0:
             fb_comment= tmp_list[-1]
             fb_id= tmp_list[-2]
@@ -413,7 +340,6 @@ class Window(object):
         self.input_word = tk.Entry(self.root, width=40,  font=('Courier',9))
         self.input_web_account = tk.Entry(self.root,  width= 40, font=('Courier',9))
         self.input_web_password = tk.Entry(self.root, width= 40, font=('Courier',9))
-        self.entry_wait_sec = tk.Entry(self.root, width= 5, font=('Courier',9))
         #self.test= tk.Text(self.root, width= 60, font=('Courier',9))
         # Label
         self.label_account = tk.Label(self.root, text="FB帳號: ", font=('Courier',9))
@@ -423,7 +349,6 @@ class Window(object):
         self.label_web_account = tk.Label(self.root, text="目標網站帳號: ", font=('Courier',9))
         self.label_web_password = tk.Label(self.root, text="目標網站密碼: ", font=('Courier',9))
         self.label_word = tk.Label(self.root, text= "手動新增留言: ",  font=('Courier',9))
-        self.wait_sec = tk.Label(self.root, text= "延遲秒數: ",  font=('Courier',9))
         # Button
         self.start_botton = tk.Button(text = "開始",  command=self.start_event, width=30)
         self.clear_botton = tk.Button(text = "清除",  command=self.clear_event, width=30)
@@ -442,7 +367,6 @@ class Window(object):
         self.input_url2.place(x=110, y=320, height=25)
         self.input_url3.place(x=110, y=350, height=25)
         self.input_url4.place(x=110, y=380, height=25)
-        self.entry_wait_sec.place(x=400, y=560, height= 20)
         #self.test.place(x=110, y= 290, height= 40)
         # Label
         self.label_account.place(x=30, y=110)
@@ -452,7 +376,6 @@ class Window(object):
         self.label_keyword.place(x=15, y= 230)
         self.label_url.place(x=25, y= 290) 
         self.label_word.place(x=15,y=260)
-        self.wait_sec.place(x=330, y=560)
         # Botton
         self.start_botton.place(x=140, y=420, height=40,  width = 220)
         self.clear_botton.place(x=140, y=470, height=30,  width = 220)
@@ -495,8 +418,6 @@ class Window(object):
         password = self.input_password.get()
         self.web_account= self.input_web_account.get()
         self.web_password= self.input_web_password.get()
-        self.seconds= 3
-        if self.entry_wait_sec.get()!= '':  self.seconds= int(self.entry_wait_sec.get())
 
         self.scan_record= 0
         Comment_List.clear()
@@ -507,7 +428,7 @@ class Window(object):
             if len(url[i])> 0:
                 try:
                     self.driver.get(url[i])
-                    scrape(self.driver, account, password, keyword, i, self.seconds)
+                    scrape(self.driver, account, password, keyword, i)
                     comment.clear()
                 except:
                     print("錯誤，可能為網址錯誤或網頁加載問題")
