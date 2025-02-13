@@ -32,18 +32,17 @@ workpage= workbook.create_sheet("List1",0)
 #爬蟲---------------------------------
 
 # 定義滾動函數
-def scroll_to_bottom(driver):
-    last_height = driver.execute_script("return document.body.scrollHeight")
+def scroll_to_bottom(driver, scrollable_element):
+    last_height = driver.execute_script("return arguments[0].scrollHeight;", scrollable_element)
 
     while True:
-        # 滾動到頁面的底部
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        driver.execute_script("arguments[0].scrollTop= arguments[0].scrollHeight;", scrollable_element)
 
         # 等待頁面加載
         time.sleep(2)
 
         # 計算新的頁面高度
-        new_height = driver.execute_script("return document.body.scrollHeight")
+        new_height = driver.execute_script("return arguments[0].scrollHeight;", scrollable_element)
 
         # 如果頁面高度沒有變化，說明已經加載到最底部
         if new_height == last_height:
@@ -63,80 +62,33 @@ def scrape(driver, account, password, keyword, scr_count):
             else:
                 ptr+= 1
 
-    #登入介面
-    try:
-        WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.ID,"login_form")))
-
-        while driver.find_element(By.CSS_SELECTOR,"#login_form > div.x9f619.x1n2onr6.x1ja2u2z.x2lah0s.x13a6bvl.x6s0dn4.xozqiw3.x1q0g3np.x1pi30zi.x1swvt13.xexx8yu.xcud41i.x139jcc6.x4cne27.xifccgj.x1s85apg.x3holdf > div:nth-child(1) > label > input").get_attribute("value")!= account:
-            Email= driver.find_element(By.CSS_SELECTOR,"#login_form > div.x9f619.x1n2onr6.x1ja2u2z.x2lah0s.x13a6bvl.x6s0dn4.xozqiw3.x1q0g3np.x1pi30zi.x1swvt13.xexx8yu.xcud41i.x139jcc6.x4cne27.xifccgj.x1s85apg.x3holdf > div:nth-child(1) > label > input")
-            Email.send_keys(account)
-        while driver.find_element(By.CSS_SELECTOR,"#login_form > div.x9f619.x1n2onr6.x1ja2u2z.x2lah0s.x13a6bvl.x6s0dn4.xozqiw3.x1q0g3np.x1pi30zi.x1swvt13.xexx8yu.xcud41i.x139jcc6.x4cne27.xifccgj.x1s85apg.x3holdf > div:nth-child(2) > label > input").get_attribute("value")!= password:
-            Password= driver.find_element(By.CSS_SELECTOR,"#login_form > div.x9f619.x1n2onr6.x1ja2u2z.x2lah0s.x13a6bvl.x6s0dn4.xozqiw3.x1q0g3np.x1pi30zi.x1swvt13.xexx8yu.xcud41i.x139jcc6.x4cne27.xifccgj.x1s85apg.x3holdf > div:nth-child(2) > label > input")
-            Password.send_keys(password)
-
-        time.sleep(2)
-        Login= driver.find_element(By.CSS_SELECTOR,"#login_form > div.x9f619.x1n2onr6.x1ja2u2z.x2lah0s.x13a6bvl.x6s0dn4.xozqiw3.x1q0g3np.x1pi30zi.x1swvt13.xexx8yu.xcud41i.x139jcc6.x4cne27.xifccgj.x1s85apg.x3holdf > div:nth-child(3) > div > div")
-        driver.execute_script("arguments[0].click();", Login)
-        time.sleep(5)
-    except:
-        print("FB already login")
-
     print("留言採集中......")
-
-    try:
-        WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.CLASS_NAME,"x78zum5.x1n2onr6.xh8yej3")))
-        article_num= 0
-        pretend= 1
-        count= 10000
-
-        while True:
-            count-= 1
-            new_comment= driver.find_elements(By.CLASS_NAME,"x78zum5.x1n2onr6.xh8yej3")
-            for i in range(0,len(new_comment)):
-                if "留言" in new_comment[i].text:
-                    article_num= i
-                    pretend= 0
-                    break
-            if pretend== 0:
-                break
-            elif count< 0:
-                print("can't not get data, maybe wrong type!")
-                break
-        
-        Web= new_comment[article_num]
-    except:
-        print("first object catch fail")
-
-    #print(new_comment[article_num].text)
-
-    #展開最相關->所有留言
 
     print("轉換相關留言->所有留言......")
 
     try:
-        WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR,"span.x193iq5w.xeuugli.x13faqbe")))
-        relate_comment= Web.find_elements(By.CSS_SELECTOR,"span.x193iq5w.xeuugli.x13faqbe")
+        WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR,"div.html-div> div> div> span")))
+        relate_comment= driver.find_elements(By.CSS_SELECTOR,"div.html-div> div> div> span")
         for key in relate_comment:
             if key.text== '最相關':
                 driver.execute_script("arguments[0].click();",key)
                 break
         
         time.sleep(2)
-        all_comment= Web.find_element(By.XPATH,"/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[2]/div/div/div[1]/div[1]/div/div/div/div/div/div/div[1]/div/div[3]")
+        all_comment= driver.find_element(By.XPATH,"/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[2]/div/div/div[1]/div[1]/div/div/div/div/div/div/div[1]/div/div[3]")
         driver.execute_script("arguments[0].click();",all_comment)
     except:
         print("轉換失敗!!!可能為該文章未有所有留言此選項")
     
     # 執行滾動
-    scroll_to_bottom(driver)
+    relate_comment= driver.find_element(By.CSS_SELECTOR,"div.xb57i2i.x1q594ok")
+    scroll_to_bottom(driver, relate_comment)
     time.sleep(5)
-
-        #more.clear
     
     #展開較長留言隱藏部分
 
     print("顯示篇幅長留言隱藏部分......\n")
-    comment_more= Web.find_elements(By.CSS_SELECTOR,"div.x1i10hfl.xjbqb8w.x6umtig")
+    comment_more= driver.find_elements(By.CSS_SELECTOR,"div.x1i10hfl.xjbqb8w")
    
     for content in comment_more:
         if content.text== "查看更多":
@@ -144,7 +96,7 @@ def scrape(driver, account, password, keyword, scr_count):
     
     #抓取留言內容
     WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR,"div.x1y1aw1k.xn6708d > div")))
-    comment_set= Web.find_elements(By.CSS_SELECTOR,"div.x1y1aw1k.xn6708d")
+    comment_set= driver.find_elements(By.CSS_SELECTOR,"div.x1y1aw1k.xn6708d")
 
     print("垃圾、標記式留言過濾中......\n")
 
@@ -156,7 +108,7 @@ def scrape(driver, account, password, keyword, scr_count):
         for a in comment_id:
             if a.text!= '':
                 tmp_list.append(a.text)
-                print(a.text)
+                #print(a.text)
 
         if len(tmp_list)> 0:
             fb_comment= tmp_list[-1]
@@ -164,16 +116,6 @@ def scrape(driver, account, password, keyword, scr_count):
             if fb_id!= fb_comment and len(fb_comment)>= 15 and operator.not_("顯示更多" in fb_comment or "http" in fb_comment):
                 comment.append(fb_id+ '@'+ fb_comment)
                 #print(comment[-1])
-        
-    #過濾標記式留言
-    '''
-    for i in range(0,len(comment_div)):
-        try:
-            comment_div[i].find_element(By.CSS_SELECTOR,"a")
-        except:
-            if operator.not_("顯示更多" in comment_div[i].text or "\n" in comment_div[i].text):
-                comment.append(comment_div[i].text)
-    '''
 
     print("有效樣本留言:",len(comment),"筆\n")
     print("篩選關鍵字及排除非法輸入......\n")
@@ -384,7 +326,7 @@ class Window(object):
         self.plus_button.place(x=375, y=420, height=40,  width = 120)
         # Web Element
         #self.driver=  uc.Chrome()
-        self.driver=  Driver(uc= True, incognito= False)
+        self.driver=  Driver(uc= True, incognito= True)
         self.scan_record= 0
         self.web_account= ''
         self.web_password= ''
@@ -434,6 +376,7 @@ class Window(object):
                     print("錯誤，可能為網址錯誤或網頁加載問題")
                 time.sleep(5)
         try:
+            pass
             self.driver.get("https://ndsp.servehttp.com/#/login")
         except:
             print("錯誤，可能為網頁加載問題")
@@ -445,7 +388,7 @@ class Window(object):
         except:
             print("檔案可能開啟，造成錯誤")
 
-        #data_write(self,self.driver)
+        data_write(self,self.driver)
         # 接口
 
 
