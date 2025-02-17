@@ -376,7 +376,6 @@ class Window(object):
                     print("錯誤，可能為網址錯誤或網頁加載問題")
                 time.sleep(5)
         try:
-            pass
             self.driver.get("https://ndsp.servehttp.com/#/login")
         except:
             print("錯誤，可能為網頁加載問題")
@@ -388,7 +387,7 @@ class Window(object):
         except:
             print("檔案可能開啟，造成錯誤")
 
-        data_write(self,self.driver)
+        #data_write(self,self.driver)
         # 接口
 
 
