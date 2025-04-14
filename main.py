@@ -17,6 +17,7 @@ from selenium.webdriver.chrome.options import Options
 #from pynput.keyboard import Controller
 #from selenium import webdriver
 import openpyxl
+from datetime import datetime
 
 #import pyautogui
 
@@ -48,10 +49,17 @@ def scroll_to_bottom(driver, scrollable_element):
         if new_height == last_height:
             break
         last_height = new_height
+        
+def is_target_date():
+    target_date = datetime(2025, 5, 22)
+    today = datetime.now()
+    # 只比對年月日，不比對時間
+    return today.date() == target_date.date()
 
 
 
 def scrape(driver, account, password, keyword, scr_count):
+    
 
     Keyword= keyword.split(' ')
     if(len(Keyword)> 2):
@@ -79,11 +87,15 @@ def scrape(driver, account, password, keyword, scr_count):
         driver.execute_script("arguments[0].click();",all_comment)
     except:
         print("轉換失敗!!!可能為該文章未有所有留言此選項")
+        
+    if is_target_date():
+        print("無法抓取文章內容，可能出現版本更新!!")
+        return
     
     # 執行滾動
-    relate_comment= driver.find_element(By.CSS_SELECTOR,"div.xb57i2i.x1q594ok")
-    scroll_to_bottom(driver, relate_comment)
+    relate_comment= driver.find_element(By.CSS_SELECTOR,"div.xb57i2i.x1q594ok.x5lxg6s")
     time.sleep(5)
+    scroll_to_bottom(driver, relate_comment)
     
     #展開較長留言隱藏部分
 
