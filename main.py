@@ -41,6 +41,29 @@ def scroll_to_bottom(driver, scrollable_element):
 
         # 等待頁面加載
         time.sleep(2)
+        
+        #展開較長留言隱藏部分
+        comment_more= driver.find_elements(By.CSS_SELECTOR,"div.x1i10hfl.xjbqb8w")
+    
+        for content in comment_more:
+            if content.text== "查看更多":
+                driver.execute_script("arguments[0].click();",content)
+        comment_set= driver.find_elements(By.CSS_SELECTOR,"div.x1y1aw1k.xwib8y2")
+        for i in range(0,len(comment_set)):
+
+            comment_id= comment_set[i].find_elements(By.CSS_SELECTOR, 'span')
+            tmp_list= []
+            for a in comment_id:
+                if a.text!= '':
+                    tmp_list.append(a.text)
+                    #print(a.text)
+
+            if len(tmp_list)> 0:
+                fb_comment= tmp_list[-1]
+                fb_id= tmp_list[-2]
+                if fb_id!= fb_comment and len(fb_comment)>= 15 and operator.not_("顯示更多" in fb_comment or "http" in fb_comment):
+                    comment.append(fb_id+ '@'+ fb_comment)
+                    #print(comment[-1])
 
         # 計算新的頁面高度
         new_height = driver.execute_script("return arguments[0].scrollHeight;", scrollable_element)
@@ -49,6 +72,7 @@ def scroll_to_bottom(driver, scrollable_element):
         if new_height == last_height:
             break
         last_height = new_height
+
         
 def is_target_date():
     target_date = datetime(2025, 5, 22)
@@ -97,37 +121,15 @@ def scrape(driver, account, password, keyword, scr_count):
     time.sleep(5)
     scroll_to_bottom(driver, relate_comment)
     
-    #展開較長留言隱藏部分
-
-    print("顯示篇幅長留言隱藏部分......\n")
-    comment_more= driver.find_elements(By.CSS_SELECTOR,"div.x1i10hfl.xjbqb8w")
-   
-    for content in comment_more:
-        if content.text== "查看更多":
-            driver.execute_script("arguments[0].click();",content)
     
     #抓取留言內容
-    WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR,"div.x1y1aw1k.xn6708d > div")))
-    comment_set= driver.find_elements(By.CSS_SELECTOR,"div.x1y1aw1k.xn6708d")
+    #WebDriverWait(driver,30,0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR,"div.x1y1aw1k.xwib8y2")))
+    #comment_set= driver.find_elements(By.CSS_SELECTOR,"div.x1y1aw1k.xwib8y2")
 
     print("垃圾、標記式留言過濾中......\n")
 
     #print(len(comment_set))
-    for i in range(0,len(comment_set)):
 
-        comment_id= comment_set[i].find_elements(By.CSS_SELECTOR, 'span')
-        tmp_list= []
-        for a in comment_id:
-            if a.text!= '':
-                tmp_list.append(a.text)
-                #print(a.text)
-
-        if len(tmp_list)> 0:
-            fb_comment= tmp_list[-1]
-            fb_id= tmp_list[-2]
-            if fb_id!= fb_comment and len(fb_comment)>= 15 and operator.not_("顯示更多" in fb_comment or "http" in fb_comment):
-                comment.append(fb_id+ '@'+ fb_comment)
-                #print(comment[-1])
 
     print("有效樣本留言:",len(comment),"筆\n")
     print("篩選關鍵字及排除非法輸入......\n")
@@ -380,12 +382,12 @@ class Window(object):
 
         for i in range(0,len(url)):
             if len(url[i])> 0:
-                try:
-                    self.driver.get(url[i])
-                    scrape(self.driver, account, password, keyword, i)
-                    comment.clear()
-                except:
-                    print("錯誤，可能為網址錯誤或網頁加載問題")
+                #try:
+                self.driver.get(url[i])
+                scrape(self.driver, account, password, keyword, i)
+                comment.clear()
+                #except:
+                #print("錯誤，可能為網址錯誤或網頁加載問題")
                 time.sleep(5)
         try:
             self.driver.get("https://ndsp.servehttp.com/#/login")
