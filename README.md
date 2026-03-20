@@ -1,1 +1,3 @@
-客製化FB爬蟲軟件，最新一版棄用undetected chromedriver 由於不支援最新版chromw 
+python selenium
+客製化FB爬蟲軟件 
+更新: 最新一版棄用undetected chromedriver 由於不支援最新版chromw 
