@@ -41,30 +41,6 @@ def scroll_to_bottom(driver, scrollable_element):
 
         # 等待頁面加載
         time.sleep(2)
-        
-        #展開較長留言隱藏部分
-        comment_more= driver.find_elements(By.CSS_SELECTOR,"div.x1i10hfl.xjbqb8w")
-    
-        for content in comment_more:
-            if content.text== "查看更多":
-                driver.execute_script("arguments[0].click();",content)
-        comment_set= driver.find_elements(By.CSS_SELECTOR,"div.x1y1aw1k.xwib8y2")
-        for i in range(0,len(comment_set)):
-
-            comment_id= comment_set[i].find_elements(By.CSS_SELECTOR, 'span')
-            tmp_list= []
-            for a in comment_id:
-                if a.text!= '':
-                    tmp_list.append(a.text)
-                    #print(a.text)
-
-            if len(tmp_list)> 0:
-                fb_comment= tmp_list[-1]
-                fb_id= tmp_list[-2]
-                if fb_id!= fb_comment and len(fb_comment)>= 15 and operator.not_("顯示更多" in fb_comment or "http" in fb_comment):
-                    comment.append(fb_id+ '@'+ fb_comment)
-                    #print(comment[-1])
-
         # 計算新的頁面高度
         new_height = driver.execute_script("return arguments[0].scrollHeight;", scrollable_element)
 
@@ -72,6 +48,30 @@ def scroll_to_bottom(driver, scrollable_element):
         if new_height == last_height:
             break
         last_height = new_height
+        
+    #展開較長留言隱藏部分
+    comment_more= driver.find_elements(By.CSS_SELECTOR,"div.x1i10hfl.xjbqb8w")
+    print(len(comment_more))
+    
+    for content in comment_more:
+        if content.text== "查看更多":
+            driver.execute_script("arguments[0].click();",content)
+    comment_set= driver.find_elements(By.CSS_SELECTOR,"div.x1y1aw1k.xwib8y2")
+    for i in range(0,len(comment_set)):
+
+        comment_id= comment_set[i].find_elements(By.CSS_SELECTOR, 'span')
+        tmp_list= []
+        for a in comment_id:
+            if a.text!= '':
+                tmp_list.append(a.text)
+                #print(a.text)
+
+        if len(tmp_list)> 0:
+            fb_comment= tmp_list[-1]
+            fb_id= tmp_list[-2]
+            if fb_id!= fb_comment and len(fb_comment)>= 15 and operator.not_("顯示更多" in fb_comment or "http" in fb_comment):
+                comment.append(fb_id+ '@'+ fb_comment)
+                #print(comment[-1])
 
         
 def is_target_date():
@@ -106,7 +106,7 @@ def scrape(driver, account, password, keyword, scr_count):
                 driver.execute_script("arguments[0].click();",key)
                 break
         
-        time.sleep(2)
+        time.sleep(5)
         all_comment= driver.find_element(By.XPATH,"/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[2]/div/div/div[1]/div[1]/div/div/div/div/div/div/div[1]/div/div[3]")
         driver.execute_script("arguments[0].click();",all_comment)
     except:
