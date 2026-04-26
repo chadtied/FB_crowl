@@ -6,14 +6,10 @@ import random
 import operator
 import time
 #import keyboard
-from selenium.webdriver.common.keys import Keys
-import tkinter as tk
 from tkinter.constants import CENTER
 from selenium.webdriver.support.ui import Select
-from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
 #from pynput.keyboard import Controller
 #from selenium import webdriver
 import openpyxl
@@ -34,44 +30,50 @@ workpage= workbook.create_sheet("List1",0)
 
 # 定義滾動函數
 def scroll_to_bottom(driver, scrollable_element):
-    last_height = driver.execute_script("return arguments[0].scrollHeight;", scrollable_element)
-
+    time.sleep(10)
+    max_wait = 30
+    start_time = time.time()
+    last_height = driver.execute_script(
+    "return arguments[0].scrollHeight;", scrollable_element
+    )
+    driver.execute_script("arguments[0].scrollTop = arguments[0].scrollHeight;",scrollable_element)
     while True:
-        
-        #展開較長留言隱藏部分
-        comment_more= driver.find_elements(By.CSS_SELECTOR,"div.x1i10hfl.xjbqb8w")
-    
-        for content in comment_more:
-            if content.text== "查看更多":
-                driver.execute_script("arguments[0].click();",content)
-        comment_set= driver.find_elements(By.CSS_SELECTOR,"div.x1y1aw1k.xwib8y2")
-        for i in range(0,len(comment_set)):
+        time.sleep(1)  # 每秒檢查一次（比 sleep(3) 更即時）
 
-            comment_id= comment_set[i].find_elements(By.CSS_SELECTOR, 'span')
-            tmp_list= []
-            for a in comment_id:
-                if a.text!= '':
-                    tmp_list.append(a.text)
-                    #print(a.text)
-
-            if len(tmp_list)> 0:
-                fb_comment= tmp_list[-1]
-                fb_id= tmp_list[-2]
-                if fb_id!= fb_comment and len(fb_comment)>= 15 and operator.not_("顯示更多" in fb_comment or "http" in fb_comment):
-                    comment.append(fb_id+ '@'+ fb_comment)
-                    #print(comment[-1])
-        
-        # 等待頁面加載
-        driver.execute_script("arguments[0].scrollTop= arguments[0].scrollHeight;", scrollable_element)
-        time.sleep(2)
-
-        # 計算新的頁面高度
         new_height = driver.execute_script("return arguments[0].scrollHeight;", scrollable_element)
 
-        # 如果頁面高度沒有變化，說明已經加載到最底部
-        if new_height == last_height:
-            break
-        last_height = new_height
+        if new_height != last_height:
+            # 有變化 → 重置計時，繼續滾
+            start_time = time.time()
+            last_height = new_height
+            driver.execute_script("arguments[0].scrollTop = arguments[0].scrollHeight;", scrollable_element)
+        else:
+            # 沒變化 → 檢查是否超時
+            if time.time() - start_time > max_wait:
+                break
+        
+    #展開較長留言隱藏部分
+    comment_more= driver.find_elements(By.CSS_SELECTOR,"div.x1i10hfl.xjbqb8w")
+    
+    for content in comment_more:
+        if content.text== "查看更多":
+            driver.execute_script("arguments[0].click();",content)
+    comment_set= driver.find_elements(By.CSS_SELECTOR,"div.x1y1aw1k.xwib8y2")
+    for i in range(0,len(comment_set)):
+
+        comment_id= comment_set[i].find_elements(By.CSS_SELECTOR, 'span')
+        tmp_list= []
+        for a in comment_id:
+            if a.text!= '':
+                tmp_list.append(a.text)
+                #print(a.text)
+
+        if len(tmp_list)> 0:
+            fb_comment= tmp_list[-1]
+            fb_id= tmp_list[-2]
+            if fb_id!= fb_comment and len(fb_comment)>= 15 and operator.not_("顯示更多" in fb_comment or "http" in fb_comment):
+                comment.append(fb_id+ '@'+ fb_comment)
+                #print(comment[-1])
 
         
 def is_target_date():
@@ -82,7 +84,7 @@ def is_target_date():
 
 
 
-def scrape(driver, account, password, keyword, scr_count):
+def scrape(driver, keyword, scr_count):
     
 
     Keyword= keyword.split(' ')
@@ -106,7 +108,7 @@ def scrape(driver, account, password, keyword, scr_count):
                 driver.execute_script("arguments[0].click();",key)
                 break
         
-        time.sleep(2)
+        time.sleep(10)
         all_comment= driver.find_element(By.XPATH,"/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[2]/div/div/div[1]/div[1]/div/div/div/div/div/div/div[1]/div/div[3]")
         driver.execute_script("arguments[0].click();",all_comment)
     except:
@@ -129,27 +131,27 @@ def scrape(driver, account, password, keyword, scr_count):
     print("垃圾、標記式留言過濾中......\n")
 
     #print(len(comment_set))
-    unique_comment= list(set(comment))
 
-    print("有效樣本留言:",len(unique_comment),"筆\n")
+
+    print("有效樣本留言:",len(comment),"筆\n")
     print("篩選關鍵字及排除非法輸入......\n")
     scr_count= scr_count*15
     xlsx_row= 1+scr_count
     xlsx_col= 1
-    for i in range(0,len(unique_comment)):
-        if operator.not_("留言……" in unique_comment[i]) and operator.not_("回覆" in unique_comment[i] and "......" in unique_comment[i]):
-            if "\n" in unique_comment[i]:
-                tmp_comment= unique_comment[i].split('\n')
+    for i in range(0,len(comment)):
+        if operator.not_("留言……" in comment[i]) and operator.not_("回覆" in comment[i] and "......" in comment[i]):
+            if "\n" in comment[i]:
+                tmp_comment= comment[i].split('\n')
                 sum_comment= ''
                 for ptr in range(0,len(tmp_comment)):
                     sum_comment+= tmp_comment[ptr]
                     sum_comment+= ','
-                unique_comment[i]= sum_comment
+                comment[i]= sum_comment
 
             for k in range(0,len(Keyword)):
-                if Keyword[k] in unique_comment[i]:
-                    Comment_List.append(unique_comment[i])
-                    workpage.cell(xlsx_row,xlsx_col).value= unique_comment[i]
+                if Keyword[k] in comment[i]:
+                    Comment_List.append(comment[i])
+                    workpage.cell(xlsx_row,xlsx_col).value= comment[i]
                     xlsx_row+= 1
                     if xlsx_row> 15+scr_count:
                         xlsx_col+= 1
@@ -157,6 +159,7 @@ def scrape(driver, account, password, keyword, scr_count):
                     
                     #print(comment[i])
                     break
+    comment.clear()
     print("獲取目標留言:",len(Comment_List),"筆\n")
     print("完成!!!")                
 #  貼入目標網站
@@ -269,6 +272,7 @@ def data_write(alt,driver):
         final_check= driver.find_element(By.CSS_SELECTOR, "div.modal-content .btn-primary")
         driver.execute_script("arguments[0].click();", final_check)
 
+        print("傳送完成!!")
         return True
     except:
         print("傳送失敗!! 可能為第三方司服器問題或是電腦速度問題")
@@ -281,99 +285,23 @@ def data_write(alt,driver):
 class Window(object):
 
     def __init__(self):
-
-        self.root = tk.Tk()
-        self.root.title("爬蟲")
-        self.root.geometry('500x600')
-        # Entry
-        self.input_account = tk.Entry(self.root, width=40, font=('Courier',9))
-        self.input_password = tk.Entry(self.root, width=40, font=('Courier',9))
-        self.input_url1 = tk.Entry(self.root, width=40, font=('Courier',9))
-        self.input_url2 = tk.Entry(self.root, width=40, font=('Courier',9))
-        self.input_url3 = tk.Entry(self.root, width=40, font=('Courier',9))
-        self.input_url4 = tk.Entry(self.root, width=40, font=('Courier',9))
-        self.input_keyword = tk.Entry(self.root, width=40, font=('Courier',9))
-        self.input_word = tk.Entry(self.root, width=40,  font=('Courier',9))
-        self.input_web_account = tk.Entry(self.root,  width= 40, font=('Courier',9))
-        self.input_web_password = tk.Entry(self.root, width= 40, font=('Courier',9))
-        #self.test= tk.Text(self.root, width= 60, font=('Courier',9))
-        # Label
-        self.label_account = tk.Label(self.root, text="FB帳號: ", font=('Courier',9))
-        self.label_password = tk.Label(self.root, text="FB密碼: ", font=('Courier',9))
-        self.label_url = tk.Label(self.root, text="請輸入網址: ", font=('Courier',9))    
-        self.label_keyword = tk.Label(self.root, text="請輸入關鍵字: ", font=('Courier',9))
-        self.label_web_account = tk.Label(self.root, text="目標網站帳號: ", font=('Courier',9))
-        self.label_web_password = tk.Label(self.root, text="目標網站密碼: ", font=('Courier',9))
-        self.label_word = tk.Label(self.root, text= "手動新增留言: ",  font=('Courier',9))
-        # Button
-        self.start_botton = tk.Button(text = "開始",  command=self.start_event, width=30)
-        self.clear_botton = tk.Button(text = "清除",  command=self.clear_event, width=30)
-        self.scan_botton = tk.Button(text = "掃描",  command=self.scan_event, width=30)
-        self.return_botton = tk.Button(text = "送出",  command=self.return_event, width=30)
-        self.plus_button= tk.Button(text = "新增",  command=self.plus_event, width=30)
-    def gui_arrange(self):
-        # Entry
-        self.input_account.place(x=110, y=110, height=25)
-        self.input_password.place(x=110, y=140, height=25)  
-        self.input_web_account.place(x=110, y=170, height=25)
-        self.input_web_password.place(x=110, y=200, height=25)
-        self.input_keyword.place(x=110, y=230, height=25)
-        self.input_word.place(x=110, y=260, height=25)
-        self.input_url1.place(x=110, y=290, height=25)
-        self.input_url2.place(x=110, y=320, height=25)
-        self.input_url3.place(x=110, y=350, height=25)
-        self.input_url4.place(x=110, y=380, height=25)
-        #self.test.place(x=110, y= 290, height= 40)
-        # Label
-        self.label_account.place(x=30, y=110)
-        self.label_password.place(x=30, y=140)
-        self.label_web_account.place(x=15, y=170)
-        self.label_web_password.place(x=15, y=200)
-        self.label_keyword.place(x=15, y= 230)
-        self.label_url.place(x=25, y= 290) 
-        self.label_word.place(x=15,y=260)
-        # Botton
-        self.start_botton.place(x=140, y=420, height=40,  width = 220)
-        self.clear_botton.place(x=140, y=470, height=30,  width = 220)
-        self.scan_botton.place(x=5, y=420, height=40,  width = 120)
-        self.return_botton.place(x=140, y=510, height=30,  width = 220)
-        self.plus_button.place(x=375, y=420, height=40,  width = 120)
-        # Web Element
-        #self.driver=  uc.Chrome()
         self.driver=  Driver(uc= True, incognito= True)
         self.scan_record= 0
         self.web_account= ''
         self.web_password= ''
         self.add_workbook_row= 16
         self.add_workbook_col= 1
-
-    def clear_event(self):
-        self.input_url1.delete(0, 'end')
-        self.input_url2.delete(0, 'end')
-        self.input_url3.delete(0, 'end')
-        self.input_url4.delete(0, 'end')
-        '''
-        self.input_keyword.delete(0, 'end')
-        self.input_account.delete(0, 'end')
-        self.input_password.delete(0, 'end')
-        self.input_web_account.delete(0, 'end')
-        self.input_web_password.delete(0, 'end')
-        self.input_word.delete(0, 'end')
-        '''
+        self.comment_limit= 1000
 
     def start_event(self):
 
-        url= []
-        url.append(self.input_url1.get())
-        url.append(self.input_url2.get())
-        url.append(self.input_url3.get())
-        url.append(self.input_url4.get())
-
-        keyword = self.input_keyword.get()
-        account = self.input_account.get()
-        password = self.input_password.get()
-        self.web_account= self.input_web_account.get()
-        self.web_password= self.input_web_password.get()
+        #輸入網址
+        user_input = input("----請輸入網址（用空白分隔----：\n")
+        #輸入關鍵字
+        keyword = input("----請輸入關鍵詞（用空白分隔----：\n")
+        #輸入需要留言數
+        comment_limit = int(input("------請輸入需要留言數量------：\n"))
+        url= user_input.split()
 
         self.scan_record= 0
         Comment_List.clear()
@@ -383,12 +311,16 @@ class Window(object):
         for i in range(0,len(url)):
             if len(url[i])> 0:
                 try:
+                    print('【'+url[i]+'】')
                     self.driver.get(url[i])
-                    scrape(self.driver, account, password, keyword, i)
-                    comment.clear()
+                    scrape(self.driver, keyword, i)
+                    time.sleep(5)
                 except:
-                    print("錯誤，可能為網址錯誤或網頁加載問題")
-                time.sleep(5)
+                    print("錯誤，可能為網址錯誤或網頁加載問題;請重新輸入網址")
+                    return False
+                if len(Comment_List)>= comment_limit:
+                    print("-----留言蒐集數已經到達-----")
+                    break
         try:
             self.driver.get("https://ndsp.servehttp.com/#/login")
         except:
@@ -400,6 +332,8 @@ class Window(object):
             workbook.save("./new.xlsx")
         except:
             print("檔案可能開啟，造成錯誤")
+        
+        return True
 
         #data_write(self,self.driver)
         # 接口
@@ -434,12 +368,13 @@ class Window(object):
     def return_event(self):
         if self.scan_record== 1:
             sent_time= 0
+            sent_count= 0
             while data_write(self,self.driver):
-                print("傳送完成!!")
                 sent_time+= 1
+                sent_count+= 1
                 #data_login(self.driver, self.web_account, self.web_password, 10)
                 if sent_time< 20:
-                    time.sleep(random.randint(20,30))
+                    time.sleep(random.randint(60,70))
                 else:
                     try:
                         print('重新登錄中......')
@@ -449,18 +384,37 @@ class Window(object):
                         data_login(self.driver, self.web_account, self.web_password, 180)
                     except:
                         print('重新登錄失敗!!!')
+                if sent_count>= self.comment_limit: 
+                    print("------已傳送指定數量貼文------")
+                    break
 
             print("全部傳送完畢!")
         else:
             print("尚未掃描")
 
-def main():
-    window = Window()
-    window.gui_arrange()
-    tk.mainloop()
+def main(window):
+    print(window.web_account, window.web_password)
+    window.start_event()
+    print("------請輸入貼文相關資訊並掃描------\n")
+    time.sleep(3)
+    input("------輸入完成請輸入 yes 開始掃描------\n")
+    #window.scan_event()
+    #window.return_event()
+
+   
 
 if __name__ == '__main__':  
-    main()
+    cycle= 'yes'
+    window= Window()
+    #輸入帳號&密碼
+    while window.web_account== '':
+        window.web_account = input("-------請輸入帳號-------：\n")
+    while window.web_password== '':
+        window.web_password = input("-------請輸入密碼-------：\n")
+
+    while cycle== 'yes':
+        main(window)
+        cycle=  input("----是否要繼續使用 要請輸入 yes;結束請輸入 no----\n")
 
 
 
